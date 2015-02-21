@@ -1,0 +1,25 @@
+<presets xmlns="http://josm.openstreetmap.de/tagging-preset-1.0"
+	author="Kristy Van Putten"
+	description="Buildings that have been collected as building=yes"
+	shortdescription="Buildings"
+	version="1.0">
+	<item name="Building">
+		<key key="building" value="yes"/>
+		<text key="name"/>
+        <combo key="addr:full" text="alamat"/>
+		<combo key="building:use" text="fungsi bangunan" />
+		<text key="amenity"/>
+		<text key="leisure" />
+		<combo key="building:structure" text="struktur bangunan" />
+		<combo key="building:walls" text="tipe dinding" />
+		<combo key="building:roof" text="tipe atap" />
+		<combo key="building:levels" text="jumlah tingkat"/>
+        <text key="office" />
+        <combo key="admin_level" text="tingkat administrasi" />
+        <combo key="access:roof" text="akses ke atap" />
+        <combo key="capacity:persons" text="kapasitas"/>
+        <text key="religion"/>
+        <combo key="type:id" text="jenis" />
+	</item>
+</presets>
+
