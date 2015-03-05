@@ -29,6 +29,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.widget.LinearLayout;
 
+
+// This is a small application for modelling a single orbit of the ISS as a Trail.
 public class MainActivity extends Activity {
 
   @Override
@@ -38,45 +40,21 @@ public class MainActivity extends Activity {
 
     final G3MBuilder_Android builder = new G3MBuilder_Android(this);
 
-    // final Geodetic2D lower = new Geodetic2D( //
-    // Angle.fromDegrees(43.532822), //
-    // Angle.fromDegrees(1.350360));
-    // final Geodetic2D upper = new Geodetic2D( //
-    // Angle.fromDegrees(43.668522), //
-    // Angle.fromDegrees(1.515350));
-    //
-    // final Sector demSector = new Sector(lower, upper);
-    //
-    // final LayerSet layerSet = new LayerSet();
-    // final WMSLayer franceRaster4000K = new WMSLayer("Raster4000k", new
-    // URL("http://www.geosignal.org/cgi-bin/wmsmap?", false),
-    // WMSServerVersion.WMS_1_1_0, demSector, "image/jpeg", "EPSG:4326", "",
-    // false, new LevelTileCondition(0, 18),
-    // TimeInterval.fromDays(30), true);
-
-    // layerSet.addLayer(franceRaster4000K);
-    // builder.getPlanetRendererBuilder().setLayerSet(layerSet);
-
-    // final MapBoxLayer mboxTerrainLayer = new
-    // MapBoxLayer("examples.map-qogxobv1", TimeInterval.fromDays(30), true,
-    // 11);
-    // layerSet.addLayer(mboxTerrainLayer);
+    // add Trails Renderer so I can create a trail to represent the satellite
     final TrailsRenderer trailsRenderer = new TrailsRenderer();
+    // add the trail and give it a large enough area that we will be able to
+    // see it from a large distance
     final Trail trail = new Trail(Color.fromRGBA255(225, 10, 10, 255), 50000,
         15000);
+    // add the trail to the renderer
     trailsRenderer.addTrail(trail);
-    // final ShapesRenderer shapesRenderer = new ShapesRenderer();
-    // marksRenderer.addMark(new Mark("MyMark", Geodetic3D.fromDegrees(0, 0, 0),
-    // AltitudeMode.ABSOLUTE, 0));
-    // marksRenderer
-    // .addMark(new Mark(
-    // new URL(
-    // "http://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Wikipedia's_W.svg/50px-Wikipedia's_W.svg.png"),
-    // Geodetic3D.fromDegrees(50, 0, 0), AltitudeMode.ABSOLUTE, 0));
+    // add the renderer to the builer
     builder.addRenderer(trailsRenderer);
 
     builder.setInitializationTask(new GInitializationTask() {
-      final AtomicBoolean loadedMarkers = new AtomicBoolean(false);
+      // create flag used in isDone() method to represent when all the 
+      // positions in the trail have been loaded.
+      final AtomicBoolean loadedTrail = new AtomicBoolean(false);
 
       @Override
       public void run(final G3MContext context) {
@@ -92,22 +70,35 @@ public class MainActivity extends Activity {
           public void onDownload(URL url, final IByteBuffer buffer,
               boolean expired) {
             context.getThreadUtils().invokeAsyncTask(new GAsyncTask() {
+              // list of names of the satellites
               List<String> names = new ArrayList<String>();
+              // list of locations of the satellite
               List<Geodetic3D> coords = new ArrayList<Geodetic3D>();
+              // list of timestamps associated with each of the
+              // locations of the satellite
               List<Double> times = new ArrayList<Double>();
 
               @Override
               public void runInBackground(G3MContext context) {
+                // parse the json file with the satellite info
                 IJSONParser parser = context.getJSONParser();
                 JSONBaseObject data = parser.parse(buffer);
                 JSONObject object = data.asObject();
+
+                // get the feature array and itterate through it
                 JSONArray features = object.getAsArray("features");
+
                 for (int i = 0; i < features.size(); i++) {
                   JSONObject feature = features.getAsObject(i);
+                  // get the name of the satellite
                   String name = feature.getAsString("name", "");
+                  // get the latitude, longitude, and altitude (height)
+                  // of the satellite
                   double lat = feature.getAsNumber("latitude", 0);
                   double lon = feature.getAsNumber("longitude", 0);
                   double alt = feature.getAsNumber("altitude", 0);
+
+                  // add all the parsed data to their respective lists
                   names.add(name);
                   coords.add(Geodetic3D.fromDegrees(lat, lon, alt));
                   times.add(feature.getAsNumber("timestamp", 0));
@@ -116,15 +107,14 @@ public class MainActivity extends Activity {
 
               @Override
               public void onPostExecute(G3MContext context) {
+                // loop through each of the satellite datapoints and 
+                // add them as a position in the trail.
                 for (int i = 0; i < times.size(); i++) {
                   trail.addPosition(coords.get(i));
-                  // marksRenderer.addMark(new Mark(names.get(i), coords.get(i),
-                  // AltitudeMode.ABSOLUTE, 0, 7));
-                  // shapesRenderer.addShape(new BoxShape(coords.get(i),
-                  // AltitudeMode.ABSOLUTE, new Vector3D(100000, 100000, pops
-                  // .get(i)), 2, Color.red()));
                 }
-                loadedMarkers.set(true);
+
+                // flag that all the positions in the trail are now loaded
+                loadedTrail.set(true);
               }
             }, true);
 
@@ -151,8 +141,8 @@ public class MainActivity extends Activity {
 
       @Override
       public boolean isDone(G3MContext context) {
-        // TODO Auto-generated method stub
-        return loadedMarkers.get();
+        // done when all the positions in the trail are loaded
+        return loadedTrail.get();
       }
     });
 
